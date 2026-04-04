@@ -1,0 +1,90 @@
+# cicd/contract.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Agentic CI/CD Factory Template — Workload Intent + Guardrail Policy
+#
+# TEMPLATE VALUES — replace YOUR-* placeholders before onboarding.
+# This file is the single source of truth for both deployment intent and
+# runtime guardrail enforcement (validated by scripts/contract_lint.py in CI).
+# ─────────────────────────────────────────────────────────────────────────────
+
+workload:
+  name: YOUR-PROJECT-NAME
+  owner: YOUR-GITHUB-OWNER
+  repo: YOUR-GITHUB-REPO
+  cloud: azure
+  region: YOUR-AZURE-REGION        # e.g. eastus
+  environments:
+    - dev
+    - test
+    - prod
+
+# ── Deployment intent ────────────────────────────────────────────────────────
+pipeline:
+  ci:
+    triggers:
+      - push
+      - pull_request
+      - workflow_dispatch
+    jobs:
+      - contract-lint
+      - iac-scan
+      - sbom
+      - terraform-ci
+
+  cd:
+    strategy: progressive            # dev → test → prod
+    approval_required:
+      - prod
+    rollback: manual
+
+  destroy:
+    requires_manual_approval: true
+    confirmation_keyword: DESTROY
+
+# ── Guardrail policy (enforced at runtime by contract_lint.py) ───────────────
+guardrails:
+
+  # Actions and providers that are permitted in workflows / Terraform
+  allowed_registries:
+    actions:
+      - github.com/actions          # actions/checkout, setup-python, etc.
+      - github.com/bridgecrewio    # checkov
+      - github.com/github          # codeql-action
+      - github.com/hashicorp       # setup-terraform
+    terraform_providers:
+      - registry.terraform.io/hashicorp   # azurerm, random, etc.
+
+  # Safe-outputs: what agents/workflows are permitted to do
+  safe_outputs:
+    allowed_actions:
+      - create_pull_request
+      - add_issue_comment
+      - add_pr_review_comment
+      - upload_artifact
+      - create_check_run
+    blocked_actions:
+      - push_to_protected_branch
+      - delete_branch
+      - modify_repository_settings
+      - access_repository_secrets_directly
+
+  # Agent permission defaults
+  agent_permissions:
+    read_only_by_default: true
+    repository_write: false          # all writes must go via PRs (safe_outputs)
+    secret_access: false             # secrets injected by GitHub Actions only
+
+  # Network restrictions
+  network:
+    allowed_outbound:
+      - registry.terraform.io
+      - management.azure.com
+      - login.microsoftonline.com
+      - github.com
+      - api.github.com
+    blocked: []
+
+  # Manifest review — generated workflows must be reviewed before merging
+  manifest_review:
+    required: true
+    artifact_name_pattern: "workflow-manifest-*"

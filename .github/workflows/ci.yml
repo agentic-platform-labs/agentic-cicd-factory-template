@@ -26,6 +26,23 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # 0. Contract Lint — validate workflows against cicd/contract.yml guardrails
+  # ---------------------------------------------------------------------------
+  contract-lint:
+    name: Contract Lint (guardrails)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml --quiet
+      - name: Validate workflows against contract
+        run: python scripts/contract_lint.py cicd/contract.yml .github/workflows
+
+  # ---------------------------------------------------------------------------
   # 1. IaC Security Scan (Checkov)
   # ---------------------------------------------------------------------------
   iac-scan:
