@@ -15,7 +15,7 @@ terraform {
 provider "azurerm" {
   features {
     key_vault {
-      purge_soft_delete_on_destroy    = false
+      purge_soft_delete_on_destroy    = true
       recover_soft_deleted_key_vaults = true
     }
   }
@@ -43,7 +43,7 @@ resource "azurerm_storage_account" "web" {
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
-  account_replication_type = "GRS"
+  account_replication_type = "LRS"
   min_tls_version          = "TLS1_2"
   https_traffic_only_enabled = true
 
@@ -93,8 +93,8 @@ resource "azurerm_key_vault" "kv" {
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   sku_name                    = "standard"
   enable_rbac_authorization   = true
-  soft_delete_retention_days  = 90
-  purge_protection_enabled    = true
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
 
   network_acls {
     default_action = "Allow"
