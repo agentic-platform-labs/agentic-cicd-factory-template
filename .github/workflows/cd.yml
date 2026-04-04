@@ -1,0 +1,63 @@
+name: CD
+
+# Agentic CI/CD Factory Template — Educational Demo
+# Progressive deployment: dev → test → prod (prod requires manual approval)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/cd.yml"
+      - ".github/workflows/_reusable-deploy-azure-tf.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to deploy"
+        required: true
+        default: dev
+        type: choice
+        options: [dev, test, prod]
+
+# Minimum workflow-level permissions — id-token:write granted per job only.
+permissions:
+  contents: read
+
+jobs:
+  deploy-dev:
+    name: Deploy → dev
+    permissions:
+      contents: read
+      id-token: write   # OIDC — scoped to this job only
+    uses: ./.github/workflows/_reusable-deploy-azure-tf.yml
+    with:
+      environment: dev
+      infra_path:  infra/envs/dev
+      tf_state_key: agentic-cicd-factory-template/dev.terraform.tfstate
+    secrets: inherit
+
+  deploy-test:
+    name: Deploy → test
+    needs: deploy-dev
+    permissions:
+      contents: read
+      id-token: write   # OIDC — scoped to this job only
+    uses: ./.github/workflows/_reusable-deploy-azure-tf.yml
+    with:
+      environment: test
+      infra_path:  infra/envs/dev   # demo uses same Terraform root for all envs
+      tf_state_key: agentic-cicd-factory-template/test.terraform.tfstate
+    secrets: inherit
+
+  deploy-prod:
+    name: Deploy → prod
+    needs: deploy-test
+    permissions:
+      contents: read
+      id-token: write   # OIDC — scoped to this job only
+    uses: ./.github/workflows/_reusable-deploy-azure-tf.yml
+    with:
+      environment: prod
+      infra_path:  infra/envs/dev   # demo uses same Terraform root for all envs
+      tf_state_key: agentic-cicd-factory-template/prod.terraform.tfstate
+    secrets: inherit

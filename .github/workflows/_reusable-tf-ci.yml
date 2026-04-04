@@ -1,0 +1,76 @@
+name: Reusable - Terraform CI
+
+on:
+  workflow_call:
+    inputs:
+      infra_path:
+        description: "Relative path to the Terraform root"
+        required: true
+        type: string
+      tf_state_key:
+        description: "Terraform backend state file key"
+        required: true
+        type: string
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_TENANT_ID:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+
+jobs:
+  terraform-ci:
+    name: Terraform CI (fmt / validate / plan)
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474  # v2.3.0
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: ${{ inputs.infra_path }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TFSTATE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ vars.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" \
+            -backend-config="key=${{ inputs.tf_state_key }}"
+
+      - name: Terraform validate
+        working-directory: ${{ inputs.infra_path }}
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: ${{ inputs.infra_path }}
+        run: terraform plan -out=tfplan.binary
+
+      - name: Sanitize artifact name
+        id: artifact-name
+        run: |
+          SAFE_KEY="${{ inputs.tf_state_key }}"
+          SAFE_KEY="${SAFE_KEY//\//-}"
+          echo "name=tfplan-${SAFE_KEY}-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Terraform plan artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+        with:
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: ${{ inputs.infra_path }}/tfplan.binary
+          retention-days: 1
+          if-no-files-found: error

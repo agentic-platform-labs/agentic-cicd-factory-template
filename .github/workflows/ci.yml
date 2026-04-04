@@ -1,0 +1,121 @@
+name: CI
+
+# Agentic CI/CD Factory Template — Educational Demo
+# Triggers on push/PR to main when infra changes, or manually.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/_reusable-tf-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/_reusable-tf-ci.yml"
+  workflow_dispatch: {}
+
+# Minimum workflow-level permissions.
+# id-token:write required because the reusable TF-CI workflow requests an OIDC token.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. IaC Security Scan (Checkov)
+  # ---------------------------------------------------------------------------
+  iac-scan:
+    name: IaC Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Prepare reports folder
+        run: mkdir -p reports
+
+      - name: Run Checkov on infra/
+        uses: bridgecrewio/checkov-action@0ce65fae06c148e349f955c3c35ad049c11e838c  # v12
+        with:
+          directory: infra/
+          framework: terraform
+          output_format: cli,junitxml,sarif
+          output_file_path: console,reports/checkov-results.xml,reports/checkov-results.sarif
+          soft_fail: true   # educational template — soft fail so demo runs
+
+      - name: Upload Checkov report
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+        with:
+          name: iac-scan-report-${{ github.run_id }}
+          path: reports/checkov-results.xml
+          if-no-files-found: warn
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@018511a1aac61b6e92783189d8c0081eb8f69932  # v3.28.13
+        with:
+          sarif_file: reports/checkov-results.sarif
+          category: checkov-iac
+
+  # ---------------------------------------------------------------------------
+  # 2. Generate SBOM (CycloneDX placeholder)
+  # ---------------------------------------------------------------------------
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Generate CycloneDX SBOM placeholder
+        env:
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          mkdir -p reports
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cat > reports/sbom.cyclonedx.json <<EOF
+          {
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.5",
+            "serialNumber": "urn:uuid:$(cat /proc/sys/kernel/random/uuid)",
+            "version": 1,
+            "metadata": {
+              "timestamp": "${TIMESTAMP}",
+              "component": {
+                "type": "library",
+                "name": "agentic-cicd-factory-template",
+                "version": "${SHA}"
+              }
+            },
+            "components": []
+          }
+          EOF
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+        with:
+          name: sbom-${{ github.run_id }}
+          path: reports/sbom.cyclonedx.json
+
+  # ---------------------------------------------------------------------------
+  # 3. Terraform CI — fmt / validate / plan (no apply)
+  #
+  # Required GitHub Secrets:  AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+  # Required GitHub Variables: TFSTATE_RESOURCE_GROUP, TFSTATE_STORAGE_ACCOUNT, TFSTATE_CONTAINER
+  # ---------------------------------------------------------------------------
+  terraform-ci:
+    name: Terraform CI (fmt / validate / plan)
+    uses: ./.github/workflows/_reusable-tf-ci.yml
+    with:
+      infra_path: infra/envs/dev
+      tf_state_key: agentic-cicd-factory-template/dev.terraform.tfstate
+    secrets: inherit

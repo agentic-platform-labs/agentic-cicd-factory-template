@@ -1,0 +1,24 @@
+
+# Terraform local artifacts — never commit
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+
+# Environment / secrets files
+.env
+.env.*
+*.pem
+*.pfx
+*.p12
+*.key
+keys/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json

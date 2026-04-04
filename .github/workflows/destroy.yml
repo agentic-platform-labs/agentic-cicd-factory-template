@@ -1,0 +1,81 @@
+name: Destroy
+
+# Agentic CI/CD Factory Template — Educational Demo
+# Safety: requires "DESTROY" typed as confirmation + prod approval gate.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to destroy"
+        required: true
+        type: choice
+        options: [dev, test, prod, all]
+      confirm:
+        description: 'Type "DESTROY" to confirm'
+        required: true
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  safety-check:
+    name: Safety Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify DESTROY confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "DESTROY" ]; then
+            echo "❌ Confirmation required: type DESTROY to proceed"
+            exit 1
+          fi
+          echo "✅ Confirmation accepted"
+
+  destroy-dev:
+    name: Destroy → dev
+    needs: safety-check
+    if: ${{ inputs.environment == 'dev' || inputs.environment == 'all' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_reusable-destroy-azure-tf.yml
+    with:
+      environment: dev
+      infra_path:  infra/envs/dev
+      tf_state_key: agentic-cicd-factory-template/dev.terraform.tfstate
+    secrets: inherit
+
+  destroy-test:
+    name: Destroy → test
+    needs: destroy-dev
+    if: >-
+      ${{ inputs.environment == 'test' ||
+          (inputs.environment == 'all' && needs.destroy-dev.result == 'success') }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_reusable-destroy-azure-tf.yml
+    with:
+      environment: test
+      infra_path:  infra/envs/dev
+      tf_state_key: agentic-cicd-factory-template/test.terraform.tfstate
+    secrets: inherit
+
+  destroy-prod:
+    name: Destroy → prod
+    needs: destroy-test
+    if: >-
+      ${{ inputs.environment == 'prod' ||
+          (inputs.environment == 'all' && needs.destroy-test.result == 'success') }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_reusable-destroy-azure-tf.yml
+    with:
+      environment: prod
+      infra_path:  infra/envs/dev
+      tf_state_key: agentic-cicd-factory-template/prod.terraform.tfstate
+    secrets: inherit
