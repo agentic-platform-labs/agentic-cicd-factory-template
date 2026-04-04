@@ -116,28 +116,58 @@ bash setup/cleanup-lab.sh
 
 ```
 .
-├── .github/workflows/
-│   ├── ci.yml                        # PR validation: lint, scan, plan
-│   ├── cd.yml                        # Deploy: dev → test → prod
-│   ├── destroy.yml                   # Destroy (manual trigger, gated)
-│   ├── _reusable-tf-ci.yml           # Reusable: TF fmt/validate/plan
-│   ├── _reusable-deploy-azure-tf.yml # Reusable: TF apply with OIDC
-│   └── _reusable-destroy-azure-tf.yml# Reusable: TF destroy with OIDC
-├── infra/envs/dev/
-│   ├── main.tf                       # RG + Storage Website + Key Vault
-│   ├── variables.tf
-│   └── outputs.tf
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                         # PR validation: lint, scan, plan (all 3 envs)
+│   │   ├── cd.yml                         # Deploy: dev → test → prod
+│   │   ├── destroy.yml                    # Destroy (manual trigger, gated)
+│   │   ├── _reusable-tf-ci.yml            # Reusable: TF fmt/validate/plan
+│   │   ├── _reusable-deploy-azure-tf.yml  # Reusable: TF apply with OIDC
+│   │   └── _reusable-destroy-azure-tf.yml # Reusable: TF destroy with OIDC
+│   ├── agents/
+│   │   ├── terraform-module-expert.agent.md    # Scaffold any Azure resource
+│   │   ├── terraform-coordinator.agent.md      # Routes between agents
+│   │   ├── terraform-security.agent.md         # Security review
+│   │   ├── azure-architecture-reviewer.agent.md# WAF/CAF compliance
+│   │   └── terraform-provider-upgrade.agent.md # Safe provider upgrades
+│   ├── skills/
+│   │   ├── azure-verified-modules/        # AVM reference patterns
+│   │   ├── azure-architecture-review/     # Architecture review patterns
+│   │   ├── github-actions-terraform/      # CI/CD pipeline patterns
+│   │   ├── terraform-provider-upgrade/    # Provider upgrade patterns
+│   │   ├── terraform-security-scan/       # Security scan patterns
+│   │   └── drawio-mcp-diagramming/        # Architecture diagram generation
+│   └── copilot-instructions.md            # Azure architecture guidance for Copilot
+├── infra/
+│   └── envs/
+│       ├── dev/                           # Development environment
+│       │   ├── main.tf                    # Resources scaffolded via @terraform-module-expert
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       ├── test/                          # Test environment
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       └── prod/                          # Production environment
+│           ├── main.tf
+│           ├── variables.tf
+│           └── outputs.tf
+├── cicd/
+│   └── contract.yml                       # Pipeline guardrails declaration
+├── scripts/
+│   └── contract_lint.py                   # Validates contract.yml in CI
+├── setup/                                 # ← Run these to onboard a new repo
+│   ├── onboard-agenticcicd-newrepo.sh     # ← Start here (runs all below)
+│   ├── azure-oidc-bootstrap-one-sp.sh     # Create Entra App + OIDC creds
+│   ├── terraform-backend-bootstrap.sh     # Create TF state storage
+│   ├── github-secrets-bootstrap.sh        # Set GitHub secrets + variables
+│   ├── create-github-environments.sh      # Create dev/test/prod environments
+│   ├── branch-protection-main.sh          # Apply main branch protection
+│   ├── patch-tfstate-keys.sh              # Rename TF state key paths
+│   └── cleanup-lab.sh                     # Destroy all resources
 ├── docs/
-│   ├── ONBOARDING.md                 # Detailed onboarding walkthrough
-│   └── TROUBLESHOOTING.md            # Common issues and fixes
-├── azure-oidc-bootstrap-one-sp.sh    # Create Entra App + OIDC creds
-├── terraform-backend-bootstrap.sh    # Create TF state storage
-├── github-secrets-bootstrap.sh       # Set GitHub secrets + variables
-├── create-github-environments.sh     # Create dev/test/prod environments
-├── branch-protection-main.sh         # Apply main branch protection
-├── onboard-agenticcicd-newrepo.sh    # ← Start here (runs all above)
-├── patch-tfstate-keys.sh             # Rename TF state key paths
-├── cleanup-lab.sh                    # Destroy all lab resources
+│   ├── ONBOARDING.md                      # Detailed onboarding walkthrough
+│   └── TROUBLESHOOTING.md                 # Common issues and fixes
 ├── .gitignore
 ├── LICENSE
 └── SECURITY.md
