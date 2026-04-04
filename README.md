@@ -1,11 +1,4 @@
-# Agentic CI/CD Factory — Public Template
-
-> ⚠️ **Educational twin — not production hardened.**
-> This is a sanitized template for learning agentic CI/CD patterns with GitHub Actions + Terraform + Azure.
-> It mirrors the architecture of a real enterprise factory but contains no real credentials, no production governance logic, and no organizational naming conventions.
-> **Not affiliated with Microsoft or GitHub. No warranty.**
-
----
+# Agentic CI/CD Factory — Enterprise Template
 
 [![CI](https://github.com/dhineshkumarganesan/agentic-cicd-factory-template/actions/workflows/ci.yml/badge.svg)](https://github.com/dhineshkumarganesan/agentic-cicd-factory-template/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -14,18 +7,19 @@
 
 ## What it is
 
-A **runnable lab template** that demonstrates enterprise CI/CD patterns using:
+A **production-pattern CI/CD factory template** that any team can fork to provision Azure infrastructure through GitHub Actions + Terraform + OIDC. Resources are scaffolded on demand using built-in Copilot agents — no manual Terraform authoring required.
 
-- **GitHub Actions** — CI (lint, validate, plan), CD (deploy), Destroy
+Built on:
+
+- **GitHub Actions** — CI (lint, validate, plan all envs), CD (progressive dev → test → prod), Destroy
 - **Terraform** — Remote state on Azure Blob Storage, OIDC auth (no stored secrets)
-- **Azure** — Resource Group + Static Website (Storage Account) + Key Vault (RBAC)
+- **Azure** — Any resource type scaffolded via `@terraform-module-expert` Copilot agent
 - **Agentic patterns** — safe-outputs, minimal permissions, SHA-pinned actions, job-level OIDC
+- **Copilot agents + skills** — terraform-module-expert, terraform-security, azure-architecture-reviewer
 
-## What it is not
+## Getting started
 
-- ❌ A production-ready platform  
-- ❌ A Microsoft or GitHub endorsed solution  
-- ❌ A replacement for security review before enterprise deployment  
+Review and customize Terraform variables, RBAC assignments, and naming conventions for your organization before deploying to production.
 
 ---
 

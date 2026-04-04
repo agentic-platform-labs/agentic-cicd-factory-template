@@ -1,6 +1,5 @@
 name: CI
 
-# Agentic CI/CD Factory Template — Educational Demo
 # Triggers on push/PR to main when infra changes, or manually.
 
 on:
@@ -17,6 +16,10 @@ on:
       - ".github/workflows/ci.yml"
       - ".github/workflows/_reusable-tf-ci.yml"
   workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # Minimum workflow-level permissions.
 # id-token:write required because the reusable TF-CI workflow requests an OIDC token.
@@ -129,10 +132,26 @@ jobs:
   # Required GitHub Secrets:  AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
   # Required GitHub Variables: TFSTATE_RESOURCE_GROUP, TFSTATE_STORAGE_ACCOUNT, TFSTATE_CONTAINER
   # ---------------------------------------------------------------------------
-  terraform-ci:
-    name: Terraform CI (fmt / validate / plan)
+  terraform-ci-dev:
+    name: Terraform CI — dev
     uses: ./.github/workflows/_reusable-tf-ci.yml
     with:
       infra_path: infra/envs/dev
       tf_state_key: agentic-cicd-factory-template/dev.terraform.tfstate
+    secrets: inherit
+
+  terraform-ci-test:
+    name: Terraform CI — test
+    uses: ./.github/workflows/_reusable-tf-ci.yml
+    with:
+      infra_path: infra/envs/test
+      tf_state_key: agentic-cicd-factory-template/test.terraform.tfstate
+    secrets: inherit
+
+  terraform-ci-prod:
+    name: Terraform CI — prod
+    uses: ./.github/workflows/_reusable-tf-ci.yml
+    with:
+      infra_path: infra/envs/prod
+      tf_state_key: agentic-cicd-factory-template/prod.terraform.tfstate
     secrets: inherit

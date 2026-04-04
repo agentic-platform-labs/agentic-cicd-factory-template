@@ -1,6 +1,5 @@
 name: CD
 
-# Agentic CI/CD Factory Template — Educational Demo
 # Progressive deployment: dev → test → prod (prod requires manual approval)
 
 on:
@@ -18,6 +17,10 @@ on:
         default: dev
         type: choice
         options: [dev, test, prod]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 # Minimum workflow-level permissions — id-token:write granted per job only.
 permissions:

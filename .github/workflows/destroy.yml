@@ -1,6 +1,5 @@
 name: Destroy
 
-# Agentic CI/CD Factory Template — Educational Demo
 # Safety: requires "DESTROY" typed as confirmation + prod approval gate.
 
 on:
@@ -60,7 +59,7 @@ jobs:
     uses: ./.github/workflows/_reusable-destroy-azure-tf.yml
     with:
       environment: test
-      infra_path:  infra/envs/dev
+      infra_path:  infra/envs/test
       tf_state_key: agentic-cicd-factory-template/test.terraform.tfstate
     secrets: inherit
 
@@ -76,6 +75,6 @@ jobs:
     uses: ./.github/workflows/_reusable-destroy-azure-tf.yml
     with:
       environment: prod
-      infra_path:  infra/envs/dev
+      infra_path:  infra/envs/prod
       tf_state_key: agentic-cicd-factory-template/prod.terraform.tfstate
     secrets: inherit
