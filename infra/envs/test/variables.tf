@@ -1,5 +1,5 @@
 variable "project" {
-  description = "Short project name used in resource names (lowercase, no spaces). Change this when forking."
+  description = "Short project name used in resource names (lowercase, no spaces)."
   type        = string
   default     = "agfactory"
 }
