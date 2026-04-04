@@ -62,7 +62,7 @@ gh repo clone my-project && cd my-project
 
 ```bash
 export STATE_PREFIX="my-project"
-bash patch-tfstate-keys.sh
+bash setup/patch-tfstate-keys.sh
 git add .github/workflows/ && git commit -m "chore: patch tfstate keys for my-project"
 ```
 
@@ -82,7 +82,7 @@ export TFSTATE_CONTAINER="tfstate"
 ### 4. Run onboarding
 
 ```bash
-bash onboard-agenticcicd-newrepo.sh
+bash setup/onboard-agenticcicd-newrepo.sh
 ```
 
 This single script:
@@ -113,7 +113,7 @@ gh run view --log | grep website_endpoint
 
 ```bash
 export REPO="${GITHUB_OWNER}/${GITHUB_REPO}"
-bash cleanup-lab.sh
+bash setup/cleanup-lab.sh
 ```
 
 ---

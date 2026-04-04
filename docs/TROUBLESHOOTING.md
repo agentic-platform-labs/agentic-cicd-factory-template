@@ -37,7 +37,7 @@ Common mismatches:
 Re-create the credential:
 ```bash
 az ad app federated-credential delete --id "$APP_ID" --federated-credential-id <ID>
-# Then re-run azure-oidc-bootstrap-one-sp.sh or create manually
+# Then re-run setup/azure-oidc-bootstrap-one-sp.sh or create manually
 ```
 
 ---
@@ -59,7 +59,7 @@ ERROR: Expected exactly 1 app registration named 'my-project-oidc', found 2.
 ```bash
 # Wait 30 seconds, then retry
 sleep 30
-bash onboard-agenticcicd-newrepo.sh
+bash setup/onboard-agenticcicd-newrepo.sh
 ```
 
 **Cause (found 2+):** A previous failed run created a partial registration.
@@ -73,7 +73,7 @@ az ad app list --display-name "my-project-oidc" --query "[].{Name:displayName, A
 az ad app delete --id "<duplicate-app-id>"
 
 # Then retry
-bash onboard-agenticcicd-newrepo.sh
+bash setup/onboard-agenticcicd-newrepo.sh
 ```
 
 ---
@@ -93,20 +93,20 @@ or command returns empty even though an app exists.
 Option A — Use a user account with Application Administrator role in Entra:
 ```bash
 az login                # login as a user with higher Entra permissions
-bash onboard-agenticcicd-newrepo.sh
+bash setup/onboard-agenticcicd-newrepo.sh
 ```
 
 Option B — Have an Entra admin run the OIDC bootstrap step:
 ```bash
 # Admin runs this:
-bash azure-oidc-bootstrap-one-sp.sh
+bash setup/azure-oidc-bootstrap-one-sp.sh
 # Then admin provides the APP_ID (client ID) to you
 export AZURE_CLIENT_ID="<provided-by-admin>"
 # You continue with the rest:
-bash terraform-backend-bootstrap.sh
-bash github-secrets-bootstrap.sh
-bash create-github-environments.sh
-bash branch-protection-main.sh
+bash setup/terraform-backend-bootstrap.sh
+bash setup/github-secrets-bootstrap.sh
+bash setup/create-github-environments.sh
+bash setup/branch-protection-main.sh
 ```
 
 Option C — Use Azure Portal:
@@ -183,8 +183,8 @@ The storage account name "sttfstatemyproject" is already taken.
 # Use a unique suffix
 export TFSTATE_STORAGE_ACCOUNT="sttfstate$(date +%s | tail -c 6)"
 echo "Using: $TFSTATE_STORAGE_ACCOUNT"
-bash terraform-backend-bootstrap.sh
-bash github-secrets-bootstrap.sh   # re-run to update the variable
+bash setup/terraform-backend-bootstrap.sh
+bash setup/github-secrets-bootstrap.sh   # re-run to update the variable
 ```
 
 ---

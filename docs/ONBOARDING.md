@@ -78,11 +78,11 @@ You need to replace this with your own repo name so state files don't collide.
 ```bash
 export STATE_PREFIX="my-project"    # use your actual repo name
 export DRY_RUN=true                 # preview first
-bash patch-tfstate-keys.sh
+bash setup/patch-tfstate-keys.sh
 
 # If the diff looks correct:
 export DRY_RUN=false
-bash patch-tfstate-keys.sh
+bash setup/patch-tfstate-keys.sh
 
 # Commit
 git add .github/workflows/
@@ -130,7 +130,7 @@ az account show --query tenantId -o tsv
 ## 4. Run onboarding script
 
 ```bash
-bash onboard-agenticcicd-newrepo.sh
+bash setup/onboard-agenticcicd-newrepo.sh
 ```
 
 This takes about 2–3 minutes. See the next section for what it does.
@@ -213,11 +213,11 @@ export SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 export TFSTATE_RESOURCE_GROUP="rg-tfstate-my-project"
 
 # Option A: just delete the state RG (fastest)
-bash cleanup-lab.sh
+bash setup/cleanup-lab.sh
 
 # Option B: trigger GitHub Actions destroy workflow first, then delete state RG
 export RUN_DESTROY_WORKFLOW=true
-bash cleanup-lab.sh
+bash setup/cleanup-lab.sh
 ```
 
 After cleanup, optionally remove the Entra App Registration:
