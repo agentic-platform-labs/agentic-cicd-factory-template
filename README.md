@@ -66,26 +66,39 @@ git add .github/workflows/ && git commit -m "chore: patch tfstate keys for my-pr
 export SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 export TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 export LOCATION="eastus"
-export GITHUB_OWNER="your-github-username"
+export GITHUB_OWNER="your-github-username"   # ⚠️ exact case — critical for OIDC
 export GITHUB_REPO="my-project"
 export TFSTATE_RESOURCE_GROUP="rg-tfstate-my-project"
 export TFSTATE_STORAGE_ACCOUNT="sttfstatemyproject"    # globally unique, 3-24 chars
 export TFSTATE_CONTAINER="tfstate"
 ```
 
-### 4. Run onboarding
+### 4. Run setup — one script per step
 
 ```bash
-bash setup/onboard-agenticcicd-newrepo.sh
+# Step 1: Create Entra App Registration + 5 OIDC federated credentials
+bash setup/azure-oidc-bootstrap-one-sp.sh
+# ↳ prints AZURE_CLIENT_ID — export it before proceeding:
+export AZURE_CLIENT_ID="<value printed above>"
+
+# Step 2: Create Terraform state storage backend
+bash setup/terraform-backend-bootstrap.sh
+
+# Step 3: Set GitHub secrets and variables
+export REPO="${GITHUB_OWNER}/${GITHUB_REPO}"
+export AZURE_TENANT_ID="$TENANT_ID"
+export AZURE_SUBSCRIPTION_ID="$SUBSCRIPTION_ID"
+bash setup/github-secrets-bootstrap.sh
+
+# Step 4: Create dev / test / prod GitHub Environments
+export PROD_REVIEWERS_USERS="your-github-username"
+bash setup/create-github-environments.sh
+
+# Step 5: Apply branch protection on main
+bash setup/branch-protection-main.sh
 ```
 
-This single script:
-- Creates an Entra App Registration with 5 OIDC federated credentials
-- Creates the Terraform state storage backend
-- Sets GitHub secrets (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`)
-- Sets GitHub variables (`TFSTATE_RESOURCE_GROUP`, `TFSTATE_STORAGE_ACCOUNT`, `TFSTATE_CONTAINER`)
-- Creates GitHub Environments (`dev`, `test`, `prod` — prod requires approval)
-- Applies branch protection on `main`
+> See [docs/ONBOARDING.md](docs/ONBOARDING.md) for the full walkthrough with explanations.
 
 ### 5. Push and trigger CD
 
@@ -107,6 +120,8 @@ gh run view --log | grep website_endpoint
 
 ```bash
 export REPO="${GITHUB_OWNER}/${GITHUB_REPO}"
+export RUN_DESTROY_WORKFLOW=true
+export ENVIRONMENT=all
 bash setup/cleanup-lab.sh
 ```
 
@@ -157,7 +172,7 @@ bash setup/cleanup-lab.sh
 ├── scripts/
 │   └── contract_lint.py                   # Validates contract.yml in CI
 ├── setup/                                 # ← Run these to onboard a new repo
-│   ├── onboard-agenticcicd-newrepo.sh     # ← Start here (runs all below)
+│   ├── fix-oidc-subjects.sh               # OIDC repair tool (run if CI fails with AADSTS700213)
 │   ├── azure-oidc-bootstrap-one-sp.sh     # Create Entra App + OIDC creds
 │   ├── terraform-backend-bootstrap.sh     # Create TF state storage
 │   ├── github-secrets-bootstrap.sh        # Set GitHub secrets + variables
